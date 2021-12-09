@@ -3,4 +3,3 @@ build/
 TAGS
 .dep
 .*.sw*
-Cargo.lock
