@@ -1,10 +1,11 @@
 #![no_std]
 
-use core::ops::{Deref, DerefMut};
-use core::slice::Iter;
-
 #[cfg(test)]
 mod tests;
+
+use core::iter::IntoIterator;
+use core::ops::{Deref, DerefMut};
+use core::slice;
 
 /// A contiguous array type backed by a slice.
 ///
@@ -17,7 +18,7 @@ mod tests;
 #[derive(Debug)]
 pub struct StackVec<'a, T: 'a> {
     storage: &'a mut [T],
-    len: usize
+    len: usize,
 }
 
 impl<'a, T: 'a> StackVec<'a, T> {

@@ -1,8 +1,18 @@
+use shim::io;
+use shim::path::{Path, PathBuf};
+
 use stack_vec::StackVec;
 use core::str;
 use core::fmt::Write;
 
+use pi::atags::Atags;
+
+use fat32::traits::FileSystem;
+use fat32::traits::{Dir, Entry};
+
 use crate::console::{kprint, kprintln, CONSOLE};
+use crate::ALLOCATOR;
+use crate::FILESYSTEM;
 
 /// Error type for `Command` parse failures.
 #[derive(Debug)]
@@ -103,7 +113,7 @@ fn exec_command<'a>(cmd: Command<'a>) {
 }
 
 /// Starts a shell using `prefix` as the prefix for each line. This function
-/// returns if the `exit` command is called.
+/// never returns.
 pub fn shell(prefix: &str) -> ! {
     loop {
         kprint!("{} ", prefix);

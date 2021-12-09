@@ -1,15 +1,15 @@
 use core::fmt;
 use core::time::Duration;
 
-use shim::io;
 use shim::const_assert_size;
+use shim::io;
 
 use volatile::prelude::*;
-use volatile::{Volatile, ReadVolatile, Reserved};
+use volatile::{ReadVolatile, Reserved, Volatile};
 
-use crate::timer;
 use crate::common::IO_BASE;
-use crate::gpio::{Gpio, Function};
+use crate::gpio::{Function, Gpio};
+use crate::timer;
 
 /// The base address for the `MU` registers.
 const MU_REG_BASE: usize = IO_BASE + 0x215040;
@@ -41,6 +41,8 @@ struct Registers {
     EXTRA_STAT: Volatile<u32>,
     BAUD_RATE: Volatile<u16>,
 }
+
+const_assert_size!(Registers, 0x7E21506C - 0x7E215040);
 
 /// The Raspberry Pi's "mini UART".
 pub struct MiniUart {

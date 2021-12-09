@@ -4,13 +4,18 @@
 #![feature(asm)]
 #![feature(global_asm)]
 #![feature(optin_builtin_traits)]
+#![feature(raw_vec_internals)]
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), no_main)]
 
 #[cfg(not(test))]
 mod init;
 
+extern crate alloc;
+
+pub mod allocator;
 pub mod console;
+pub mod fs;
 pub mod mutex;
 pub mod shell;
 
@@ -39,10 +44,19 @@ fn uart_loop() -> ! {
     }
 }
 
-// FIXME: You need to add dependencies here to
-// test your drivers (Phase 2). Add them as needed.
+use allocator::Allocator;
+use fs::FileSystem;
 
-#[no_mangle]
-pub unsafe extern "C" fn kmain() -> ! {
-    shell::shell("=>");
+#[cfg_attr(not(test), global_allocator)]
+pub static ALLOCATOR: Allocator = Allocator::uninitialized();
+pub static FILESYSTEM: FileSystem = FileSystem::uninitialized();
+
+fn kmain() -> ! {
+    unsafe {
+        ALLOCATOR.initialize();
+        FILESYSTEM.initialize();
+    }
+
+    kprintln!("Welcome to cs3210!");
+    shell::shell(">");
 }
