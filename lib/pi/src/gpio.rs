@@ -1,5 +1,4 @@
 use core::marker::PhantomData;
-
 use crate::common::{IO_BASE, states};
 use volatile::prelude::*;
 use volatile::{Volatile, WriteVolatile, ReadVolatile, Reserved};
@@ -46,13 +45,12 @@ struct Registers {
     PUDCLK: [Volatile<u32>; 2],
 }
 
-/// Possible states for a GPIO pin.
-#[allow(unused_doc_comments)]
+// Possible states for a GPIO pin.
 states! {
     Uninitialized, Input, Output, Alt
 }
 
-/// A GPIO pin in state `State`.
+/// A GPIP pin in state `State`.
 ///
 /// The `State` generic always corresponds to an uninstantiatable type that is
 /// use solely to mark and track the state of a given GPIO pin. A `Gpio`
@@ -103,7 +101,16 @@ impl Gpio<Uninitialized> {
     /// Enables the alternative function `function` for `self`. Consumes self
     /// and returns a `Gpio` structure in the `Alt` state.
     pub fn into_alt(self, function: Function) -> Gpio<Alt> {
-        unimplemented!()
+        let register = (self.pin / 10) as usize;
+        let index = 3 * (self.pin % 10);
+        let selector = (function as u32) << index;
+        self.registers.FSEL[register].or_mask(selector);
+
+        Gpio {
+            pin: self.pin,
+            registers: self.registers,
+            _state: PhantomData
+        }
     }
 
     /// Sets this pin to be an _output_ pin. Consumes self and returns a `Gpio`
@@ -122,12 +129,16 @@ impl Gpio<Uninitialized> {
 impl Gpio<Output> {
     /// Sets (turns on) the pin.
     pub fn set(&mut self) {
-        unimplemented!()
+        let register = (self.pin / 32) as usize;
+        let selector = (self.pin % 32) as u32;
+        self.registers.SET[register].write(0x1 << selector);
     }
 
     /// Clears (turns off) the pin.
     pub fn clear(&mut self) {
-        unimplemented!()
+        let register = (self.pin / 32) as usize;
+        let selector = (self.pin % 32) as u32;
+        self.registers.CLR[register].write(0x1 << selector);
     }
 }
 
@@ -135,6 +146,8 @@ impl Gpio<Input> {
     /// Reads the pin's value. Returns `true` if the level is high and `false`
     /// if the level is low.
     pub fn level(&mut self) -> bool {
-        unimplemented!()
+        let register = (self.pin / 32) as usize;
+        let selector = (self.pin % 32) as u32;
+        self.registers.LEV[register].has_mask(0x1 << selector)
     }
 }
