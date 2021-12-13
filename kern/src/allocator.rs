@@ -4,7 +4,7 @@ mod util;
 mod bin;
 mod bump;
 
-type AllocatorImpl = bin::Allocator;
+type AllocatorImpl = bump::Allocator;
 
 #[cfg(test)]
 mod tests;
@@ -44,6 +44,7 @@ impl Allocator {
     /// Panics if the system's memory map could not be retrieved.
     pub unsafe fn initialize(&self) {
         let (start, end) = memory_map().expect("failed to find memory map");
+        kprintln!("memory {:#0x} :: {:#0x}", start, end);
         *self.0.lock() = Some(AllocatorImpl::new(start, end));
     }
 }
@@ -78,7 +79,14 @@ pub fn memory_map() -> Option<(usize, usize)> {
     let page_size = 1 << 12;
     let binary_end = unsafe { (&__text_end as *const u8) as usize };
 
-    unimplemented!("memory map")
+    use pi::atags::{Atags, Atag};
+
+    Atags::get()
+        .find_map(|x| x.mem())
+        .map(|m| (
+            util::align_up(binary_end, page_size),
+            util::align_down((m.start as usize) + (m.size as usize), page_size)
+        ))
 }
 
 impl fmt::Debug for Allocator {

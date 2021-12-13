@@ -25,7 +25,9 @@ impl Iterator for Atags {
 
     // FIXME: Implement `Iterator` for `Atags`
     fn next(&mut self) -> Option<Atag> {
-        unimplemented!()
+        let raw = self.ptr?;
+        self.ptr = raw.next();
+        Some(raw.into())
     }
 }
 

@@ -4,7 +4,7 @@ KERN := kernel
 TARGET := target/aarch64-unknown-none/release/${KERN}
 SDCARD ?= $(ROOT)/ext/fat32-imgs/mock1.fat32.img
 OBJCPY := cargo objcopy -- --strip-all -O binary
-TTY_PATH := /dev/ttyUSB0
+TTY_PATH ?= /dev/ttyUSB0
 QEMU_ARGS ?=
 
 .PHONY: all build qemu transmit objdump nm check clean install test
@@ -52,4 +52,4 @@ install: build
 	@$(ROOT)/bin/install-kernel.py build/$(KERN).elf
 
 test:
-	cargo test --target=$(shell $(ROOT)/bin/get-host-target.sh)
+	cargo test --target=$(shell $(ROOT)/bin/get-host-target.sh) $(TEST)

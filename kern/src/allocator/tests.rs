@@ -139,9 +139,10 @@ mod allocator {
             let (&(ptr_a, ref layout_a), &(ptr_b, _)) = (&window[0], &window[1]);
             assert!(
                 ptr_b - ptr_a >= layout_a.size(),
-                "memory region {:x} - {:x} does not fit {}",
+                "memory region {:x} - {:x} ({}) does not fit {}",
                 ptr_a,
                 ptr_b,
+                ptr_b - ptr_a,
                 layout_a.size()
             );
         }
@@ -242,7 +243,7 @@ mod allocator {
             let mut ptrs = vec![];
             for _ in 0..(25 + i * 2) {
                 let ptr = a.alloc(layout.clone());
-                assert!(!ptr.is_null());
+                assert!(!ptr.is_null(), "Layout {:?}", layout);
                 assert!(ptr as usize % layout.align() == 0,
                     "{:x} is not aligned to {}", ptr as usize, layout.align());
                 scribble(ptr, layout.size());

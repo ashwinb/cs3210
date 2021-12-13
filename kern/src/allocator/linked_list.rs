@@ -63,6 +63,9 @@ pub struct LinkedList {
 
 unsafe impl Send for LinkedList {}
 
+use crate::console::kprintln;
+
+
 impl LinkedList {
     /// Returns a new, empty linked list.
     pub const fn new() -> LinkedList {
@@ -86,6 +89,7 @@ impl LinkedList {
     /// `*item = some_usize` is a safe operation as long as the pointer resides
     /// in `self`.
     pub unsafe fn push(&mut self, item: *mut usize) {
+        // kprintln!("pushing {:?} onto {:?}", item, self.head);
         *item = self.head as usize;
         self.head = item;
     }
