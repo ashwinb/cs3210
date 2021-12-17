@@ -171,6 +171,10 @@ impl<'a, HANDLE: VFatHandle> FileSystem for &'a HANDLE {
     type Entry = Entry<HANDLE>;
 
     fn open<P: AsRef<Path>>(self, path: P) -> io::Result<Self::Entry> {
+        if !path.as_ref().is_absolute() {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "not an absolute path"));
+        }
+
         let mut iter = path.as_ref().components().skip_while(|c| match c {
             Normal(_) => false,
             _ => true,

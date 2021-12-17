@@ -16,10 +16,7 @@ impl Allocator {
     /// starting at address `start` and ending at address `end`.
     #[allow(dead_code)]
     pub fn new(start: usize, end: usize) -> Allocator {
-        Allocator {
-            current: start,
-            end
-        }
+        Allocator { current: start, end }
     }
 }
 

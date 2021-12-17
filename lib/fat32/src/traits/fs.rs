@@ -1,6 +1,7 @@
 use shim::{io, path::Path};
 
 use crate::traits::Metadata;
+use core::fmt;
 
 /// Trait implemented by files in the file system.
 pub trait File: io::Read + io::Write + io::Seek + Sized {
@@ -27,7 +28,7 @@ pub trait Dir: Sized {
 ///
 /// An entry is either a `File` or a `Directory` and is associated with both
 /// `Metadata` and a name.
-pub trait Entry: Sized {
+pub trait Entry: Sized + fmt::Display {
     type File: File;
     type Dir: Dir;
     type Metadata: Metadata;

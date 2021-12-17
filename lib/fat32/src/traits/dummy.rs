@@ -1,6 +1,7 @@
 use shim::io;
 
 use crate::traits::{Dir, Entry, File, Metadata, Timestamp};
+use core::fmt;
 
 /// A type that implements all of the file system traits.
 #[derive(Copy, Clone)]
@@ -52,6 +53,12 @@ impl Iterator for Dummy {
     type Item = Dummy;
     fn next(&mut self) -> Option<Self::Item> {
         panic!("Dummy")
+    }
+}
+
+impl fmt::Display for Dummy {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "ヽ(⌐■_■)ノ♪♬")
     }
 }
 

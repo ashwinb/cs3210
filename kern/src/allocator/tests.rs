@@ -118,12 +118,7 @@ mod allocator {
 
         // Check that we have allocations after 'start' and before 'end'.
         for &(ptr, ref layout) in &pointers {
-            assert!(
-                ptr >= start,
-                "allocated {:x} after start ({:x})",
-                ptr,
-                start
-            );
+            assert!(ptr >= start, "allocated {:x} after start ({:x})", ptr, start);
             assert!(
                 ptr + layout.size() <= end,
                 "{:x} + {:x} exceeds the bounds of {:x}",
@@ -189,11 +184,7 @@ mod allocator {
         test_layouts!(layouts, start, end, a);
     });
 
-    test_allocators!(bin_alloc_2, bump_alloc_2, 16 * (1 << 20), |(
-        start,
-        end,
-        a,
-    )| {
+    test_allocators!(bin_alloc_2, bump_alloc_2, 16 * (1 << 20), |(start, end, a)| {
         let mut layouts = vec![];
         for i in 1..1024 {
             layouts.push(layout!(i * 8, 16));

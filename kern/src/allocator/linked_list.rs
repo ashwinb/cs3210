@@ -65,13 +65,10 @@ unsafe impl Send for LinkedList {}
 
 use crate::console::kprintln;
 
-
 impl LinkedList {
     /// Returns a new, empty linked list.
     pub const fn new() -> LinkedList {
-        LinkedList {
-            head: ptr::null_mut(),
-        }
+        LinkedList { head: ptr::null_mut() }
     }
 
     /// Returns `true` if the list is empty and `false` otherwise.

@@ -5,6 +5,8 @@
 #![feature(global_asm)]
 #![feature(optin_builtin_traits)]
 #![feature(raw_vec_internals)]
+// ASHWIN added!
+#![feature(slice_patterns)]
 #![feature(panic_info_message)]
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), no_main)]
@@ -30,10 +32,11 @@ use pi::uart;
 #[inline(never)]
 fn spin_sleep_ms(ms: usize) {
     for _ in 0..(ms * 6000) {
-        unsafe { asm!("nop"); }
+        unsafe {
+            asm!("nop");
+        }
     }
 }
-
 
 fn uart_loop() -> ! {
     let mut uart = uart::MiniUart::new();
@@ -52,7 +55,6 @@ fn uart_loop() -> ! {
 
 use allocator::Allocator;
 use fs::FileSystem;
-use crate::fat32::traits::{Dir as DirTrait, Entry as EntryT, File as FileT, FileSystem as FST};
 
 #[cfg_attr(not(test), global_allocator)]
 pub static ALLOCATOR: Allocator = Allocator::uninitialized();
@@ -79,15 +81,6 @@ fn kmain() -> ! {
         kprintln!("{:?}", v);
     }
 
-    let root = FILESYSTEM.open("/").expect("Could not open file system");
-    kprintln!("root dir: {}", root.name());
-    let entries = root.as_dir().expect("directory").entries().expect("entries");
-    for entry in entries {
-        kprintln!("{}", entry.name());
-    }
-    // for entry in root.as_dir().expect("directory").entries().expect("entries") {
-    //     kprintln!("{}", entry.name());
-    // }
     kprintln!("Welcome to cs3210!");
     shell::shell(">");
 }

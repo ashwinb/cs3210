@@ -1,6 +1,8 @@
 use crate::traits;
-use crate::vfat::{Dir, File, Metadata, VFatHandle};
+use crate::vfat::{Dir, File, Metadata, VFatHandle, Timestamp};
 use core::fmt;
+
+use traits::{Entry as EntryT, Metadata as MetadataT, Timestamp as TimestampT};
 
 // You can change this definition if you want
 #[derive(Debug)]
@@ -11,6 +13,44 @@ pub enum Entry<HANDLE: VFatHandle> {
 }
 
 // TODO: Implement any useful helper methods on `Entry`.
+impl<HANDLE: VFatHandle> fmt::Display for Entry<HANDLE> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        let mut write_bool = |b: bool, c: char| {
+            if b {
+                write!(f, "{}", c)
+            } else {
+                write!(f, "-")
+            }
+        };
+
+        write_bool(self.is_dir(), 'd')?;
+        write_bool(self.is_file(), 'f')?;
+        write_bool(self.metadata().read_only(), 'r')?;
+        write_bool(self.metadata().hidden(), 'h')?;
+        write!(f, "\t")?;
+
+        let mut write_timestamp = |ts: Timestamp| {
+            write!(
+                f,
+                "{:02}/{:02}/{} {:02}:{:02}:{:02} ",
+                ts.month(),
+                ts.day(),
+                ts.year(),
+                ts.hour(),
+                ts.minute(),
+                ts.second()
+            )
+        };
+
+        write_timestamp(self.metadata().created())?;
+        write_timestamp(self.metadata().modified())?;
+        write_timestamp(self.metadata().accessed())?;
+        write!(f, "\t")?;
+
+        write!(f, "{}", self.name())?;
+        Ok(())
+    }
+}
 
 impl<HANDLE: VFatHandle> traits::Entry for Entry<HANDLE> {
     // FIXME: Implement `traits::Entry` for `Entry`.

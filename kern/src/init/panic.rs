@@ -1,6 +1,6 @@
 use core::panic::PanicInfo;
 
-use crate::console::{kprintln};
+use crate::console::kprintln;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {

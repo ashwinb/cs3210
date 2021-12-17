@@ -75,16 +75,16 @@ impl BlockDevice for Sd {
     ///
     /// An error of kind `Other` is returned for all other errors.
     fn read_sector(&mut self, n: u64, buf: &mut [u8]) -> io::Result<usize> {
-        kprintln!("reading sector {} into buf {:p} len {}", n, buf.as_ptr(), buf.len());
+        // kprintln!("reading sector {} into buf {:p} len {}", n, buf.as_ptr(), buf.len());
         unsafe {
             let num = sd_readsector(n as i32, buf.as_mut_ptr());
-            kprintln!("SD card returned {}", num);
+            // kprintln!("SD card returned {}", num);
             match num {
                 num if num > 0 => Ok(num as usize),
                 _ => match sd_err {
                     -1 => Err(io::Error::new(io::ErrorKind::TimedOut, "Timed out")),
                     _ => Err(io::Error::new(io::ErrorKind::Other, "Communication error")),
-                }
+                },
             }
         }
     }

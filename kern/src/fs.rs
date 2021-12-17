@@ -29,7 +29,7 @@ impl Debug for PiVFatHandle {
     }
 }
 
-use crate::console::{kprintln};
+use crate::console::kprintln;
 
 impl VFatHandle for PiVFatHandle {
     fn new(val: VFat<PiVFatHandle>) -> Self {
@@ -62,9 +62,7 @@ impl FileSystem {
     pub unsafe fn initialize(&self) {
         let mut handle = self.0.lock();
         let sd = Sd::new().expect("SD card initialize failure");
-        *handle = Some(
-            VFat::<PiVFatHandle>::from(sd).expect("MBR and FAT partition read failed")
-        );
+        *handle = Some(VFat::<PiVFatHandle>::from(sd).expect("MBR and FAT partition read failed"));
     }
 }
 

@@ -51,11 +51,7 @@ impl Allocator {
 
 unsafe impl GlobalAlloc for Allocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        self.0
-            .lock()
-            .as_mut()
-            .expect("allocator uninitialized")
-            .alloc(layout)
+        self.0.lock().as_mut().expect("allocator uninitialized").alloc(layout)
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
@@ -79,14 +75,12 @@ pub fn memory_map() -> Option<(usize, usize)> {
     let page_size = 1 << 12;
     let binary_end = unsafe { (&__text_end as *const u8) as usize };
 
-    use pi::atags::{Atags, Atag};
-
-    Atags::get()
-        .find_map(|x| x.mem())
-        .map(|m| (
+    Atags::get().find_map(|x| x.mem()).map(|m| {
+        (
             util::align_up(binary_end, page_size),
-            util::align_down((m.start as usize) + (m.size as usize), page_size)
-        ))
+            util::align_down((m.start as usize) + (m.size as usize), page_size),
+        )
+    })
 }
 
 impl fmt::Debug for Allocator {
