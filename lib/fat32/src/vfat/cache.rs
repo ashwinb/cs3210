@@ -1,6 +1,7 @@
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::fmt;
+use hashbrown::hash_map::Entry;
 use hashbrown::HashMap;
 use shim::io;
 
@@ -12,6 +13,7 @@ struct CacheEntry {
     dirty: bool,
 }
 
+#[derive(Debug)]
 pub struct Partition {
     /// The physical sector where the partition begins.
     pub start: u64,
@@ -49,6 +51,7 @@ impl CachedPartition {
         T: BlockDevice + 'static,
     {
         assert!(partition.sector_size >= device.sector_size());
+        assert!(partition.sector_size % device.sector_size() == 0);
 
         CachedPartition {
             device: Box::new(device),
@@ -76,6 +79,42 @@ impl CachedPartition {
         Some(physical_sector)
     }
 
+    fn cache_entry(&mut self, sector: u64) -> io::Result<&mut CacheEntry> {
+        let start = self.virtual_to_physical(sector);
+        if start.is_none() {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, "Invalid logical sector"));
+        }
+        let factor = self.factor();
+
+        match self.cache.entry(sector) {
+            Entry::Occupied(o) => Ok(o.into_mut()),
+            Entry::Vacant(v) => {
+                let mut vec: Vec<u8> = Vec::new();
+                for i in 0..factor {
+                    self.device.read_all_sector(start.unwrap() + i, &mut vec)?;
+                }
+                Ok(v.insert(CacheEntry {
+                    data: vec,
+                    dirty: false,
+                }))
+            }
+        }
+
+        // The following will never work because Rust isn't smart enough to know that the
+        // mutable borrow later is not conflicting with the immutable one earlier. The fact that
+        // you are returning a value makes the compiler keep the borrow alive until the end of
+        // the lexical function.
+        //
+        // if let Some(entry) = self.cache.get(&sector) {
+        //     return Ok(&entry.data);
+        // }
+
+        // let mut vec: Vec<u8> = Vec::new();
+        // self.device.read_all_sector(sector, &mut vec)?;
+        // let ee = self.cache.insert(sector, CacheEntry { data: vec, dirty: false });
+        // Ok(&ee.unwrap().data)
+    }
+
     /// Returns a mutable reference to the cached sector `sector`. If the sector
     /// is not already cached, the sector is first read from the disk.
     ///
@@ -87,7 +126,10 @@ impl CachedPartition {
     ///
     /// Returns an error if there is an error reading the sector from the disk.
     pub fn get_mut(&mut self, sector: u64) -> io::Result<&mut [u8]> {
-        unimplemented!("CachedPartition::get_mut()")
+        self.cache_entry(sector).map(|x| {
+            x.dirty = true;
+            x.data.as_mut()
+        })
     }
 
     /// Returns a reference to the cached sector `sector`. If the sector is not
@@ -97,7 +139,7 @@ impl CachedPartition {
     ///
     /// Returns an error if there is an error reading the sector from the disk.
     pub fn get(&mut self, sector: u64) -> io::Result<&[u8]> {
-        unimplemented!("CachedPartition::get()")
+        self.cache_entry(sector).map(|x| x.data.as_ref())
     }
 }
 
@@ -105,15 +147,21 @@ impl CachedPartition {
 // `write_sector` methods should only read/write from/to cached sectors.
 impl BlockDevice for CachedPartition {
     fn sector_size(&self) -> u64 {
-        unimplemented!()
+        self.partition.sector_size
     }
 
     fn read_sector(&mut self, sector: u64, buf: &mut [u8]) -> io::Result<usize> {
-        unimplemented!()
+        let cached_buf = self.get(sector)?;
+        let n = ::core::cmp::min(buf.len(), cached_buf.len());
+        buf.copy_from_slice(&cached_buf[..n]);
+        Ok(n)
     }
 
     fn write_sector(&mut self, sector: u64, buf: &[u8]) -> io::Result<usize> {
-        unimplemented!()
+        let writable_cache = self.get_mut(sector)?;
+        let n = ::core::cmp::min(buf.len(), writable_cache.len());
+        writable_cache.copy_from_slice(&buf[..n]);
+        Ok(n)
     }
 }
 
@@ -121,6 +169,7 @@ impl fmt::Debug for CachedPartition {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("CachedPartition")
             .field("device", &"<block device>")
+            .field("partition", &self.partition)
             .field("cache", &self.cache)
             .finish()
     }

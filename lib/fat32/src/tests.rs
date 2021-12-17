@@ -58,7 +58,7 @@ macro resource($name:expr) {{
             eprintln!(
                 "\nfailed to find assignment 2 resource '{}': {}\n\
                  => perhaps you need to run 'make fetch'?",
-                $name, e
+                path, e
             );
             panic!("missing resource");
         }
