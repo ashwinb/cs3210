@@ -29,8 +29,11 @@ impl Debug for PiVFatHandle {
     }
 }
 
+use crate::console::{kprintln};
+
 impl VFatHandle for PiVFatHandle {
     fn new(val: VFat<PiVFatHandle>) -> Self {
+        kprintln!("vfat: {:?}", val);
         PiVFatHandle(Rc::new(Mutex::new(val)))
     }
 
@@ -57,9 +60,22 @@ impl FileSystem {
     ///
     /// Panics if the underlying disk or file sytem failed to initialize.
     pub unsafe fn initialize(&self) {
-        unimplemented!("FileSystem::initialize()")
+        let mut handle = self.0.lock();
+        let sd = Sd::new().expect("SD card initialize failure");
+        *handle = Some(
+            VFat::<PiVFatHandle>::from(sd).expect("MBR and FAT partition read failed")
+        );
     }
 }
 
 // FIXME: Implement `fat32::traits::FileSystem` for `&FileSystem`
-impl fat32::traits::FileSystem for &FileSystem {}
+impl fat32::traits::FileSystem for &FileSystem {
+    type File = File<PiVFatHandle>;
+    type Dir = Dir<PiVFatHandle>;
+    type Entry = Entry<PiVFatHandle>;
+
+    fn open<P: AsRef<Path>>(self, path: P) -> io::Result<Self::Entry> {
+        let handle = self.0.lock();
+        handle.as_ref().unwrap().open(path)
+    }
+}

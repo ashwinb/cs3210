@@ -45,8 +45,8 @@ impl<HANDLE: VFatHandle> VFat<HANDLE> {
         let part = mbr.fat32_partition().ok_or(Error::NotFound)?;
 
         let pblock = BiosParameterBlock::from(&mut device, part.starting_sector() as u64)?;
-        println!("{:#?}", mbr);
-        println!("{:#?}", pblock);
+        // println!("{:#?}", mbr);
+        // println!("{:#?}", pblock);
         let vfat = VFat {
             phantom: PhantomData,
             device: CachedPartition::new(

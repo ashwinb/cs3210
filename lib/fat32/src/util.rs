@@ -70,7 +70,7 @@ fn calc_new_len_cap<T, U>(vec: &Vec<T>) -> (usize, usize) {
 
 impl<T> VecExt for Vec<T> {
     unsafe fn cast<U>(mut self) -> Vec<U> {
-        assert!(align_of::<T>() == align_of::<U>());
+        assert!(align_of::<T>() % align_of::<U>() == 0);
 
         let (new_len, new_cap) = calc_new_len_cap::<T, U>(&self);
         let new_ptr = self.as_mut_ptr() as *mut U;

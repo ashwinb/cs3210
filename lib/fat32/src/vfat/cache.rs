@@ -5,6 +5,7 @@ use hashbrown::hash_map::Entry;
 use hashbrown::HashMap;
 use shim::io;
 
+use crate::util::VecExt;
 use crate::traits::BlockDevice;
 
 #[derive(Debug)]
@@ -89,7 +90,9 @@ impl CachedPartition {
         match self.cache.entry(sector) {
             Entry::Occupied(o) => Ok(o.into_mut()),
             Entry::Vacant(v) => {
-                let mut vec: Vec<u8> = Vec::new();
+                // force the buf to be at least 4-byte aligned so our SD card reader doesn't suffer
+                let vec_aligned: Vec<u32> = Vec::with_capacity(128);
+                let mut vec: Vec<u8> = unsafe { vec_aligned.cast() };
                 for i in 0..factor {
                     self.device.read_all_sector(start.unwrap() + i, &mut vec)?;
                 }

@@ -46,6 +46,7 @@ impl LocalAlloc for Allocator {
     /// or `layout` does not meet this allocator's
     /// size or alignment constraints.
     unsafe fn alloc(&mut self, layout: Layout) -> *mut u8 {
+        // let align = core::cmp::max(layout.size(), layout.align())
         let start = align_up(self.current, layout.align());
         let end = start + layout.size();
         if end > self.end {

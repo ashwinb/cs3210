@@ -6,6 +6,8 @@ use crate::allocator::linked_list::LinkedList;
 use crate::allocator::util::*;
 use crate::allocator::LocalAlloc;
 
+use crate::console::{kprintln};
+
 /// A simple allocator that allocates based on size classes.
 ///   bin 0 (2^3 bytes)    : handles allocations in (0, 2^3]
 ///   bin 1 (2^4 bytes)    : handles allocations in (2^3, 2^4]
@@ -28,6 +30,7 @@ impl Allocator {
     /// Creates a new bin allocator that will allocate memory from the region
     /// starting at address `start` and ending at address `end`.
     pub fn new(start: usize, end: usize) -> Allocator {
+        kprintln!("Using BIN allocator");
         Allocator {
             bins: [LinkedList::new(); MAX_BINS],
             current: start,
@@ -51,8 +54,6 @@ fn size_for_bin(bin: usize) -> usize {
 fn power_of_two(n: usize) -> bool {
     (n & (n - 1)) == 0
 }
-
-use crate::console::{kprintln};
 
 impl LocalAlloc for Allocator {
     /// Allocates memory. Returns a pointer meeting the size and alignment

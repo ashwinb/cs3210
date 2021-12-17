@@ -18,9 +18,11 @@ use crate::console::{kprint, kprintln};
 
 pub mod allocator;
 pub mod console;
-// pub mod fs;
+pub mod fs;
 pub mod mutex;
 pub mod shell;
+
+extern crate fat32;
 
 extern crate pi;
 use pi::uart;
@@ -49,31 +51,43 @@ fn uart_loop() -> ! {
 }
 
 use allocator::Allocator;
-// use fs::FileSystem;
+use fs::FileSystem;
+use crate::fat32::traits::{Dir as DirTrait, Entry as EntryT, File as FileT, FileSystem as FST};
 
 #[cfg_attr(not(test), global_allocator)]
 pub static ALLOCATOR: Allocator = Allocator::uninitialized();
-// pub static FILESYSTEM: FileSystem = FileSystem::uninitialized();
+pub static FILESYSTEM: FileSystem = FileSystem::uninitialized();
 
 fn kmain() -> ! {
     // spin a tiny amount so we have time to connect our terminal to the UART
     spin_sleep_ms(100);
 
-    // for tag in pi::atags::Atags::get() {
-    //     kprintln!("ATAG: {:#?}", tag);
-    // }
+    kprintln!("===== Testing ATAGS ======");
+    for tag in pi::atags::Atags::get() {
+        kprintln!("{:#?}", tag);
+    }
     unsafe {
         ALLOCATOR.initialize();
-        // FILESYSTEM.initialize();
+        FILESYSTEM.initialize();
     }
 
+    kprintln!("===== Testing the allocator ======");
     use alloc::vec::Vec;
-
     let mut v = Vec::new();
     for i in 0..10 {
         v.push(i);
         kprintln!("{:?}", v);
     }
+
+    let root = FILESYSTEM.open("/").expect("Could not open file system");
+    kprintln!("root dir: {}", root.name());
+    let entries = root.as_dir().expect("directory").entries().expect("entries");
+    for entry in entries {
+        kprintln!("{}", entry.name());
+    }
+    // for entry in root.as_dir().expect("directory").entries().expect("entries") {
+    //     kprintln!("{}", entry.name());
+    // }
     kprintln!("Welcome to cs3210!");
     shell::shell(">");
 }
