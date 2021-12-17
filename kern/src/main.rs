@@ -4,6 +4,7 @@
 #![feature(asm)]
 #![feature(global_asm)]
 #![feature(optin_builtin_traits)]
+#![feature(ptr_internals)]
 #![feature(raw_vec_internals)]
 // ASHWIN added!
 #![feature(slice_patterns)]
@@ -23,6 +24,10 @@ pub mod console;
 pub mod fs;
 pub mod mutex;
 pub mod shell;
+pub mod param;
+pub mod process;
+pub mod traps;
+pub mod vm;
 
 extern crate fat32;
 
@@ -55,10 +60,16 @@ fn uart_loop() -> ! {
 
 use allocator::Allocator;
 use fs::FileSystem;
+use process::GlobalScheduler;
+use traps::irq::Irq;
+use vm::VMManager;
 
 #[cfg_attr(not(test), global_allocator)]
 pub static ALLOCATOR: Allocator = Allocator::uninitialized();
 pub static FILESYSTEM: FileSystem = FileSystem::uninitialized();
+pub static SCHEDULER: GlobalScheduler = GlobalScheduler::uninitialized();
+pub static VMM: VMManager = VMManager::uninitialized();
+pub static IRQ: Irq = Irq::uninitialized();
 
 fn kmain() -> ! {
     // spin a tiny amount so we have time to connect our terminal to the UART

@@ -1,12 +1,12 @@
 SECTIONS {
-  . = 0x80000; /* Raspbery Pi 3 Aarch64 (kernel8.img) load address */
+  . = 0xffffffffc0000000;
 
   /* start of the binary */
   __text_beg = .;
 
   .text : {
-      *(.text._start) /* from init.S */
-      *(.text .text.* .gnu.linkonce.t*)
+        *(.text._start)
+        *(.text .text.* .gnu.linkonce.t*)
   }
 
   .rodata : {
