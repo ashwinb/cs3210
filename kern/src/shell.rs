@@ -1,6 +1,6 @@
+use io::{Read, Write as ioWrite};
 use shim::io;
 use shim::path::{Component, Path, PathBuf};
-use io::{Read, Write as ioWrite};
 
 use core::fmt::Write;
 use core::str;
@@ -12,6 +12,8 @@ use fat32::traits::{Dir, Entry, File, Metadata, Timestamp};
 use crate::console::{kprint, kprintln, CONSOLE};
 use crate::ALLOCATOR;
 use crate::FILESYSTEM;
+
+use kernel_api::syscall;
 
 /// Error type for `Command` parse failures.
 #[derive(Debug)]
@@ -190,11 +192,16 @@ fn cat<'a>(cmd: Command<'a>, cwd: &PathBuf) {
 
         let n = 0;
         match res {
-            Err(e) => { kprintln!("{}: {}", f, e); },
+            Err(e) => {
+                kprintln!("{}: {}", f, e);
+            }
             Ok(mut file) => loop {
                 match file.read(&mut buf) {
                     Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
-                    Err(ref e) => { kprintln!("{}: {}", f, e); break; },
+                    Err(ref e) => {
+                        kprintln!("{}: {}", f, e);
+                        break;
+                    }
                     Ok(n) => {
                         if n == 0 {
                             break;
@@ -210,7 +217,7 @@ fn cat<'a>(cmd: Command<'a>, cwd: &PathBuf) {
                         }
                     }
                 }
-            }
+            },
         }
     }
 
@@ -229,12 +236,31 @@ fn cat<'a>(cmd: Command<'a>, cwd: &PathBuf) {
     }
 }
 
+fn sleep<'a>(cmd: Command<'a>) {
+    match cmd.args[1..] {
+        [ms] => {
+            if let Ok(ms) = ms.parse::<u64>() {
+                kprintln!("sleeping...");
+                let res = syscall::sleep(core::time::Duration::from_millis(ms));
+                if let Ok(elapsed) = res {
+                    kprintln!("slept for approx {:?}", elapsed);
+                }
+            } else {
+                kprintln!("invalid parameter");
+            }
+        },
+        _ => {
+            kprintln!("Usage: sleep [ms]");
+        }
+    }
+}
+
 /// Starts a shell using `prefix` as the prefix for each line. This function
 /// never returns.
-pub fn shell(prefix: &str) -> ! {
+pub fn shell(prefix: &str) {
     let mut cwd = PathBuf::from("/");
 
-    loop {
+    'shell_loop: loop {
         kprint!("{} ", prefix);
         let mut line_buf: [u8; 512] = [0; 512];
         let empty: &str = &"";
@@ -253,6 +279,8 @@ pub fn shell(prefix: &str) -> ! {
                 "ls" => ls(cmd, &cwd),
                 "cat" => cat(cmd, &cwd),
                 "pwd" => kprintln!("{}", cwd.display()),
+                "sleep" => sleep(cmd),
+                "exit" => break 'shell_loop,
                 _ => kprintln!("unknown command: {}", cmd.path()),
             },
         }

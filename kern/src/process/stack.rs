@@ -28,13 +28,18 @@ impl Stack {
     pub fn new() -> Option<Stack> {
         let raw_ptr = unsafe {
             let raw_ptr: *mut u8 = ALLOCATOR.alloc(Stack::layout());
-            assert!(!raw_ptr.is_null());
-            raw_ptr.write_bytes(0, Self::SIZE);
+            if !raw_ptr.is_null() {
+                raw_ptr.write_bytes(0, Self::SIZE);
+            }
             raw_ptr
         };
 
-        let ptr = Unique::new(raw_ptr as *mut _).expect("non-null");
-        Some(Stack { ptr })
+        if raw_ptr.is_null() {
+            None
+        } else {
+            let ptr = Unique::new(raw_ptr as *mut _).expect("non-null");
+            Some(Stack { ptr })
+        }
     }
 
     /// Internal method to cast to a `*mut u8`.

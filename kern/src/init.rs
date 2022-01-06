@@ -50,8 +50,7 @@ unsafe fn switch_to_el2() {
         SCR_EL3.set(SCR_EL3::NS | SCR_EL3::SMD | SCR_EL3::HCE | SCR_EL3::RW | SCR_EL3::RES1);
 
         // set up Saved Program Status Register (C5.2.19)
-        SPSR_EL3
-            .set((SPSR_EL3::M & 0b1001) | SPSR_EL3::F | SPSR_EL3::I | SPSR_EL3::A | SPSR_EL3::D);
+        SPSR_EL3.set((SPSR_EL3::M & 0b1001) | SPSR_EL3::F | SPSR_EL3::I | SPSR_EL3::A | SPSR_EL3::D);
 
         // eret to itself, expecting current_el() == 2 this time.
         ELR_EL3.set(switch_to_el2 as u64);
@@ -86,6 +85,7 @@ unsafe fn switch_to_el1() {
 
         // set up exception handlers
         // FIXME: load `vectors` addr into appropriate register (guide: 10.4)
+        VBAR_EL1.set(&mut vectors as *mut u64 as u64);
 
         // change execution level to EL1 (ref: C5.2.19)
         SPSR_EL2.set(
@@ -97,6 +97,8 @@ unsafe fn switch_to_el1() {
         );
 
         // FIXME: eret to itself, expecting current_el() == 1 this time
+        ELR_EL2.set(switch_to_el1 as u64);
+        asm::eret();
     }
 }
 

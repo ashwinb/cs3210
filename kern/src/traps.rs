@@ -9,6 +9,9 @@ use pi::interrupt::{Controller, Interrupt};
 
 use self::syndrome::Syndrome;
 use self::syscall::handle_syscall;
+use crate::console::kprintln;
+use crate::IRQ;
+use aarch64::*;
 
 #[repr(u16)]
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -41,5 +44,36 @@ pub struct Info {
 /// the trap frame for the exception.
 #[no_mangle]
 pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
-    unimplemented!("handle_exception");
+    // kprintln!("_________ exception handler {:?} ________", info);
+    match info.kind {
+        Kind::Synchronous => {
+            let syn = Syndrome::from(esr);
+            // kprintln!("esr: {}, syndrome: {:?}", esr, syn);
+            match syn {
+                Syndrome::Brk(_) => {
+                    crate::shell::shell("debug =>");
+                    tf.elr += 4;
+                },
+                Syndrome::Svc(n) => {
+                    // kprintln!("handling syscall {:?}", syn);
+                    handle_syscall(n, tf);
+                },
+                _ => {
+                    kprintln!("Syndrome {:#?} not handled, FAR: {:#0x}", syn, unsafe { FAR_EL1.get() });
+                }
+            }
+        },
+        Kind::Irq => {
+            let controller = Controller::new();
+            for &int in Interrupt::iter() {
+                if controller.is_pending(int) {
+                    IRQ.invoke(int, tf);
+                }
+            }
+        },
+        _ => {
+            kprintln!("Interrupt not handled: {:?}", info.kind);
+        }
+    }
+    // kprintln!("________ handler returns _________");
 }

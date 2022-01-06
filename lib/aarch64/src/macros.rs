@@ -75,7 +75,7 @@ macro_rules! defbit {
         #[allow(non_snake_case)]
         #[derive(Copy, Clone)]
         pub struct $regname (u64);
-        
+
         impl $regname {
             #[inline(always)]
             pub fn new(data: u64) -> $regname {

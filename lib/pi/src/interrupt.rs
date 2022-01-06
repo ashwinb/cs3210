@@ -1,7 +1,7 @@
 use crate::common::IO_BASE;
 
 use volatile::prelude::*;
-use volatile::{Volatile, ReadVolatile};
+use volatile::{Volatile, ReadVolatile, Reserved};
 
 const INT_BASE: usize = IO_BASE + 0xB000 + 0x200;
 
@@ -25,9 +25,9 @@ impl Interrupt {
         [Timer1, Timer3, Usb, Gpio0, Gpio1, Gpio2, Gpio3, Uart].into_iter()
     }
 
-    pub fn to_index(i: Interrupt) -> usize {
+    pub fn to_index(&self) -> usize {
         use Interrupt::*;
-        match i {
+        match self {
             Timer1 => 0,
             Timer3 => 1,
             Usb => 2,
@@ -73,16 +73,39 @@ impl From<usize> for Interrupt {
     }
 }
 
+// (C, packed) is dangerous especially if you use the Volatile constructs because
+// you end up taking borrows to packed fields. Things go badly wrong with alignment
+// Q: how do you ensure the repr() is correct?
+// A: print address!
 #[repr(C)]
 #[allow(non_snake_case)]
 struct Registers {
     // FIXME: Fill me in.
+    BASIC_IRQ_PENDING: ReadVolatile<u32>,
+    IRQ_PENDING: [ReadVolatile<u32>; 2],
+    FIQ_CTRL: ReadVolatile<u8>,
+    _r0: Reserved<[u8; 3]>,
+    IRQ_ENABLE: [Volatile<u32>; 2],
+    BASIC_IRQ_ENABLE: Volatile<u8>,
+    _r1: Reserved<[u8; 3]>,
+    IRQ_DISABLE: [Volatile<u32>; 2],
+    BASIC_IRQ_DISABLE: Volatile<u8>,
+    _r2: Reserved<[u8; 3]>,
 }
 
 /// An interrupt controller. Used to enable and disable interrupts as well as to
 /// check if an interrupt is pending.
 pub struct Controller {
     registers: &'static mut Registers
+}
+
+fn index(int: Interrupt) -> (usize, u8) {
+    let val = int as u8;
+    if val < 32 {
+        (0, val)
+    } else {
+        (1, val - 32)
+    }
 }
 
 impl Controller {
@@ -93,18 +116,29 @@ impl Controller {
         }
     }
 
+    pub fn current_enables(&self) -> (u32, u32) {
+        (self.registers.IRQ_ENABLE[0].read(), self.registers.IRQ_ENABLE[1].read())
+    }
+
+    pub fn addr_of_enable_register(&self) -> usize {
+        &self.registers.IRQ_ENABLE as *const Volatile<u32> as usize
+    }
+
     /// Enables the interrupt `int`.
     pub fn enable(&mut self, int: Interrupt) {
-        unimplemented!()
+        let (idx, bit) = index(int);
+        self.registers.IRQ_ENABLE[idx].or_mask(0x1 << bit);
     }
 
     /// Disables the interrupt `int`.
     pub fn disable(&mut self, int: Interrupt) {
-        unimplemented!()
+        let (idx, bit) = index(int);
+        self.registers.IRQ_DISABLE[idx].or_mask(0x1 << bit);
     }
 
     /// Returns `true` if `int` is pending. Otherwise, returns `false`.
     pub fn is_pending(&self, int: Interrupt) -> bool {
-        unimplemented!()
+        let (idx, bit) = index(int);
+        self.registers.IRQ_PENDING[idx].has_mask(0x1 << bit)
     }
 }

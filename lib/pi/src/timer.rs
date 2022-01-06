@@ -37,11 +37,20 @@ impl Timer {
         Duration::from_micros(us)
     }
 
+    pub fn lo(&self) -> u32 {
+        self.registers.CLO.read()
+    }
+
     /// Sets up a match in timer 1 to occur `t` duration from now. If
     /// interrupts for timer 1 are enabled and IRQs are unmasked, then a timer
     /// interrupt will be issued in `t` duration.
     pub fn tick_in(&mut self, t: Duration) {
-        unimplemented!()
+        let end = self.registers.CLO.read().wrapping_add(t.as_micros() as u32);
+
+        // clear the IRQ
+        self.registers.CS.write(0x1 << 1);
+        // write the next CMP
+        self.registers.COMPARE[1].write(end);
     }
 }
 
@@ -62,5 +71,5 @@ pub fn spin_sleep(t: Duration) {
 /// interrupts for timer 1 are enabled and IRQs are unmasked, then a timer
 /// interrupt will be issued in `t` duration.
 pub fn tick_in(t: Duration) {
-    unimplemented!()
+    Timer::new().tick_in(t);
 }

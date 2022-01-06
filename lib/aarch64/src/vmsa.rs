@@ -33,17 +33,23 @@ pub mod EntryPerm {
 #[allow(non_snake_case)]
 #[allow(non_upper_case_globals)]
 pub mod EntrySh {
-    pub const ISh: u64 = 0b11;
-    pub const OSh: u64 = 0b10;
+    pub const Inner: u64 = 0b11;
+    pub const Outer: u64 = 0b10;
 }
 
 #[allow(non_snake_case)]
 #[allow(non_upper_case_globals)]
 pub mod EntryAttr {
-    pub const Mem: u64 = 0b000;
-    pub const Dev: u64 = 0b001;
-    pub const Nc: u64 = 0b010;
+    pub const Normal: u64 = 0b000;
+    pub const Device: u64 = 0b001;
+    pub const NonCacheable: u64 = 0b010;
 }
+
+defbit!(VirtualAddrBits, [
+    L2     [41-29],
+    L3     [28-16],
+    OFFSET [15-0],
+]);
 
 defbit!(RawL2Entry, [
     ADDR  [47-16],
@@ -108,7 +114,7 @@ defreg!(ID_AA64MMFR0_EL1, [
 
 // For Phase5, (ref. 7.2.86: Implementation Defined Registers)
 defreg!(S3_1_C15_C2_1);
-// << 
+// <<
 
 impl fmt::Debug for RawL2Entry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -144,15 +150,15 @@ impl fmt::Debug for RawL3Entry {
         })?;
 
         write!(f, "{}", match self.get_value(RawL3Entry::ATTR) {
-            EntryAttr::Mem => "M",
-            EntryAttr::Dev => "D",
-            EntryAttr::Nc =>  "N",
+            EntryAttr::Normal => "M",
+            EntryAttr::Device => "D",
+            EntryAttr::NonCacheable =>  "N",
             _ => "?",
         })?;
 
         write!(f, "{}", match self.get_value(RawL3Entry::SH) {
-            EntrySh::ISh => "I",
-            EntrySh::OSh => "O",
+            EntrySh::Inner => "I",
+            EntrySh::Outer => "O",
             _ => "?",
         })?;
 
